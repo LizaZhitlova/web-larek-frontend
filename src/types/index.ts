@@ -1,6 +1,6 @@
 
 // типы для работы с это типы для работы  c json
-export interface Product {
+export interface IProduct {
     id: string;
     title: string;
     description: string;
@@ -9,14 +9,14 @@ export interface Product {
     price: number | null;
   }
 
-  export interface ProductListResponse {
+  export interface IProductListResponse {
     total: number;
-    items: Product[];
+    items: IProduct[];
   }
 
-  export type ProductItemResponse = Product;
+  export type ProductItemResponse = IProduct;
 
-  export interface OrderRequest {
+  export interface IOrderRequest {
     payment: 'online' | 'cash';
     email: string;
     phone: string;
@@ -25,11 +25,11 @@ export interface Product {
     items: string[];
   }
 
-  export interface OrderSuccessResponse {
+  export interface IOrderSuccessResponse {
     id: string;
     total: number;
   }
 
-  export interface ErrorResponse {
+  export interface IErrorResponse {
     error: string;
   }

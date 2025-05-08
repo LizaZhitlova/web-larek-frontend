@@ -1,178 +1,264 @@
 import { EventEmitter } from './components/base/events';
+import{WebLarekApi} from './components/WebLarekApi';
 import './scss/styles.scss';
+import {API_URL, CDN_URL} from "./utils/constants";
+import { cloneTemplate, ensureElement, setElementData } from './utils/utils';
+import {
+    IProduct,
+    IOrderRequest,
+    IOrderSuccessResponse,
+} from './types/index'
 
 
-// пример реализации увеличения или уменьшения количества товаров в корине через +
+interface IBasketModel {
+    items: Map<string, number>;
+    add(id: string): void;
+    remove(id: string): void;
+  }
 
+interface IEventEmitter {
+    emit(event: string, data?: unknown): void;
+    on(event: string, handler: (data?: unknown) => void): void;
+  }
 
-interface IBasketModel{
-items:Map<string,number>;
-add(id:string):void;
-remove(id:string):void;
-}
+interface ICatalogModel {
+    items: IProduct[];
+    setItems(items: IProduct[]): void;
+    getProduct(id: string): IProduct | undefined;
+  }
 
-
-interface IEventEmmiter{
-    emit:(event:string,data:unknown)=>void;
-}
-
-
-class BasketModel implements IBasketModel{
-    items:Map<string,number>= new Map();
-
-add (id:string):void{
-if(!this.items.has(id))this.items.set(id,0);// создаём новый 
-this.items.set(id,this.items.get(id)+1);// прибавляем количество 
-this._changed();
-}
-
-remove(id: string): void {
-    if(!this.items.has(id))return; // если нет, то и делать с ним нечего 
-    if(this.items.get(id)!>0){
-        this.items.set(id,this.items.get(id)!-1);
-        if(this.items.get(id)===0)this.items.delete(id);//если опустили до нуля, то удаляем
+  // Класс модели корзины
+class BasketModel implements IBasketModel {
+    items: Map<string, number> = new Map();
+  
+    constructor(protected events: IEventEmitter) {}
+  
+    add(id: string): void {
+      this.items.set(id, (this.items.get(id) ?? 0) + 1);
+      this._changed();
     }
-    this._changed();
-}
-
-protected _changed(){// метод генерирующий уведомление об изменении данных. реакция на событие будет реализовано презентером 
-this.events.emit('basket:change',{items:Array.from(this.items.keys())});
-
-}
-
-}
-
-// у нас есть сгенерированное событие мы занем его название, теперь к этому сгенерированному событию мы мыожем прикрепить обработчик 
-
-const events =new EventEmmiter();
-const basket = new BasketModel(events);
-
-events.on('basket:change', (data:{items:string[]}) =>{
-
-// выводим куда-то, возмодно задйестовать наши элемнеты отображени 
-})
-
-// так как в корзине не хранятся данные о продуктах нам нужна ещё одна модеь, которая будет хранить даннве о продуктах 
-
-//  итрефес самого товара 
-
-interface IProduct{
-    id:string;
-    title:string;
-}
-// интерфес для хранения спика этих товаров 
-interface CatalogModel{
-    items:IProduct[];
-    setItems(items:IProduct[]):void;// чтобы установить после загрузки страницы из АПИ 
-    getProduct(id:string):IProduct;// чтобы получить сприсок при необходимости 
-}
-
-// так же необходимо реализовать техническую модель даннанных - состояние страницы, которая не связвна напрямую с пользовотельскими событиями.Но нам необходимо знать что отображается на странице, какое модальное окно открыто и т.д
-// к этим состояниям мы добавляем опр. методы, как например setItems(items:IProduct[]):void - установка при загрузки страницы 
-
-
-
-
-// после того как написаны можели данных необходимо переходить к реализации отображения- мы получаем в работу опр. HTML элемен и передаём в него данные.
-// может иметь следюущий интерфейс 
-
-//интерфейс для конструктора 
-interface IViewConstructor{
-    new (container:HTMLElement,events?:IEventEmmiter):IView;
-}
-// интерфейс для класса отображения 
-interface IView{
-    render(data?:object):HTMLElement;// получает данные и возвращает HTML элемент с заполненными данными 
-}
-
-// в случае использования IView мы можем реализовать отображение отдельного товара в корзине следующим образом:
-
-class BasketItemView implements IView{
-    // элементы внутри контейнера
-    protected title:HTMLSpanElement;
-    protected addButton:HTMLButtonElement;
-    protected removeButton:HTMLButtonElement;
-    // элементы которые хотим сохранить на будущее \
-    protected id:string|null=null;
-
-    constructor(protected container:HTMLElement,protected events:IEventEmmiter){
-        // инициализируем, чтобы не искать повторно 
-        this.title=container.querySelector('.basket-item__title')as HTMLSpanElement;
-        this.addButton=container.querySelector('.basket-item__add') as HTMLButtonElement;
-        this.removeButton=container.querySelector('.basket-item__remove') as HTMLButtonElement;
-
-        //устанавливаем событие 
-
-        this.addButton.addEventListener("click",()=>{
-//генерируем событие в брокере 
-            this.events.emit('ul:basket-remove',{id:this.id})
-        });
-}
-
-render(data:{id:string,title:string}) {
-    if(data){
-// если есть новые данные, то запоминаем их 
-        this.id=data.id;
-        // и выведем в интерфейс 
-        this.title.textContent=data.title;
+  
+    remove(id: string): void {
+      if (!this.items.has(id)) return;
+  
+      const current = this.items.get(id)!;
+      if (current > 1) {
+        this.items.set(id, current - 1);
+      } else {
+        this.items.delete(id);
+      }
+  
+      this._changed();
     }
-    return this.container;
-}
-}
-
-// вся корзина целиком можем выглядеть так 
-
-class BasketView implements IView{
-
-    constructor(protected container:HTMLElement){}
-
-    render(data:{items:HTMLElement[]}) {
-        if(data){
-
-            this.container.replaceChildren(...data.items);
-        }
-return this.container;
+  
+    protected _changed() {
+      this.events.emit('basket:change', {
+        items: Array.from(this.items.keys()),
+      });
     }
+  }
+ 
+  // Класс модели каталога
+  class CatalogModel implements ICatalogModel {
+    items: IProduct[] = [];
+  
+    constructor(protected events: IEventEmitter) {}
+  
+    setItems(items: IProduct[]) {
+      this.items = items;
+      this.events.emit('catalog:loaded', { items });
+    }
+  
+    getProduct(id: string): IProduct | undefined {
+      return this.items.find(item => item.id === id);
+    }
+  }
 
-}
+// Интерфейсы представлений
 
+interface IViewConstructor {
+    new (container: HTMLElement, events?: IEventEmitter): IView;
+  }
+  
+  interface IView {
+    render(data?: object): HTMLElement;
+  }
 
-// поле реализации отображени и моделей код необходимо объединить
-// для объедининения нам необходимо инициировать брокер событий и создать экземпляры соотвествующих классов 
-// инициализация 
+// Представление одного товара в корзине
 
-const api= ShopAPI();
-const events= new EventEmitter();
-const basketView=new BasketView(document.querySelector(".basket"));
+class BasketItemView implements IView {
+    protected title: HTMLSpanElement;
+    protected addButton: HTMLButtonElement;
+    protected removeButton: HTMLButtonElement;
+    protected id: string | null = null;
+  
+    constructor(protected container: HTMLElement, protected events: IEventEmitter) {
+      this.title = container.querySelector('.basket-item__title') as HTMLSpanElement;;
+      this.addButton = container.querySelector('.basket-item__add') as HTMLButtonElement;
+      this.removeButton = container.querySelector('.basket-item__remove') as HTMLButtonElement;
+  
+      this.addButton.addEventListener('click', () => {
+        this.events.emit('ul:basket-add', { id: this.id });
+      });
+  
+      this.removeButton.addEventListener('click', () => {
+        this.events.emit('ul:basket-remove', { id: this.id });
+      });
+    }
+  
+    render(data: { id: string; title: string }) {
+      if (data) {
+        this.id = data.id;
+        this.title.textContent = data.title;
+      }
+      return this.container;
+    }
+  }
+
+// Представление всей корзины
+
+class BasketView implements IView {
+    constructor(protected container: HTMLElement) {}
+  
+    render(data: { items: HTMLElement[] }) {
+      if (data) {
+        this.container.replaceChildren(...data.items);
+      }
+      return this.container;
+    }
+  }
+
+//представление карточки
+class CardView implements IView {
+    protected element: HTMLButtonElement;
+    protected title: HTMLElement;
+    protected category: HTMLElement;
+    protected price: HTMLElement;
+    protected image: HTMLImageElement;
+  
+    constructor(product: IProduct, protected events: IEventEmitter) {
+      // клонируем шаблон
+      this.element = cloneTemplate<HTMLButtonElement>('#card-catalog');
+  
+      // наполняем данными
+      this.title = ensureElement('.card__title', this.element);
+      this.category = ensureElement('.card__category', this.element);
+      this.price = ensureElement('.card__price', this.element);
+      this.image = ensureElement<HTMLImageElement>('.card__image', this.element);
+  
+      this.render(product);
+  
+      // событие по клику
+      this.element.addEventListener('click', () => {
+        this.events.emit('product:select', { id: product.id });
+      });
+    }
+  
+    render(product: IProduct): HTMLElement {
+      this.title.textContent = product.title;
+      this.category.textContent = product.category;
+      this.price.textContent = product.price !== null ? `${product.price} синапсов` : 'Бесценно';
+      this.image.src = product.image;
+      this.image.alt = product.title;
+  
+      setElementData(this.element, { id: product.id });
+      const categoryClassMap: Record<string, string> = {
+        'софт-скил': 'card__category_soft',
+        'хард-скил': 'card__category_hard',
+        'другое': 'card__category_other',
+        'дополнительное': 'card__category_additional',
+        'кнопка': 'card__category_button'
+      };
+const normalizedCategory = product.category.toLowerCase().trim();
+  const categoryModifier = categoryClassMap[normalizedCategory] || 'card__category_other';
+
+  // Обновляем класс (удаляем старые и добавляем нужные)
+  this.category.className = `card__category ${categoryModifier}`;
+  
+      return this.element;
+    }
+  }
+
+//представление контейнера карточек
+class CatalogView implements IView {
+    protected container: HTMLElement;
+  
+    constructor(
+      selector: string = '.gallery',
+      protected events: EventEmitter
+    ) {
+      this.container = ensureElement(selector);
+    }
+  
+    render(data?: { items: IProduct[] }): HTMLElement {
+      if (!data) return this.container;
+  
+      const cardElements = data.items.map(product => {
+        const cardView = new CardView(product, this.events);
+        return cardView.render(product);
+      });
+  
+      this.container.replaceChildren(...cardElements);
+      return this.container;
+    }
+  }
+
+// Инициализация
+
+const events = new EventEmitter();
+const api = new WebLarekApi(CDN_URL, API_URL);
+const basketView = new BasketView(document.querySelector('.basket') as HTMLElement);
 const basketModel = new BasketModel(events);
-const catalogModel =new CatalogModel(events);
-// можно собрать в функции или классы отдельные экраны с логикой их формирования
+const catalogModel = new CatalogModel(events);
+const catalogView = new CatalogView('.gallery', events);
 
-function renderBasket(items:string[]){
-    basketView.render{
-items.map(id=>{
-
-    const itemView=new BasketItemView(events);
-    return itemView.render(catalogModel.getProduct(id))
-})
-
-    }
-
-}
-// при изменении рендерим
-events.on("basket:change",(event:{items:string[]})=>{
-renderBasket(event.items);
-});
-
-// при дествиях ихменяем модель, а далее рендерим 
-events.on("ul:basket-add",(event:{id:string})=>{
-    basketModel.add(event.id);
-    });
-
-    events.on("ul:basket-remove",(event:{id:string})=>{
-        basketModel.remove(event.id);
+function renderBasket(items: string[]) {
+    const itemViews = items
+      .map((id) => {
+        const product = catalogModel.getProduct(id);
+        if (!product) return null;
+  
+        // 1. Клонируем HTML-шаблон
+        const item = cloneTemplate<HTMLLIElement>('#card-basket');
+  
+        // 2. Создаём экземпляр представления
+        const itemView = new BasketItemView(item, events);
+  
+        // 3. Вызываем render() с нужными данными
+        return itemView.render({
+          id: product.id,
+          title: product.title
         });
-// подгружаем начальные данные и запускаем процессы
-        api.getCatalog()
-        .then(catalogModel.setItems.bind(catalogModel))
-        .catch(err=>console.error(err));
+      })
+      .filter(Boolean) as HTMLElement[];
+  
+    basketView.render({ items: itemViews });
+  }
+
+// Подписки на события
+
+events.on('basket:change', (event: { items: string[] }) => {
+    renderBasket(event.items);
+  });
+  
+  events.on('ul:basket-add', (event: { id: string }) => {
+    basketModel.add(event.id);
+  });
+  
+  events.on('ul:basket-remove', (event: { id: string }) => {
+    basketModel.remove(event.id);
+  });
+
+  events.on('catalog:loaded', (data: { items: IProduct[] }) => {
+    catalogView.render(data);
+});
+// Загрузка данных
+
+document.querySelector('.modal.modal_active')?.classList.remove('modal_active');
+
+api
+  .getProducts()
+  .then((data) => {
+    catalogModel.setItems(data.items);
+  })
+  .catch(console.error);
