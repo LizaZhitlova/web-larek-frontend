@@ -1,5 +1,7 @@
 
 // типы для работы с это типы для работы  c json
+
+// IProduct - интерфейс, хранит типы данных карточки товара 
 export interface IProduct {
     id: string;
     title: string;
@@ -9,6 +11,7 @@ export interface IProduct {
     price: number | null;
   }
 
+  // IProductListResponse - интерфес хранит типы данных, которые выводятся на страницу 
   export interface IProductListResponse {
     total: number;
     items: IProduct[];
@@ -16,6 +19,7 @@ export interface IProduct {
 
   export type ProductItemResponse = IProduct;
 
+  //IOrderRequest хранит типы пользовательских данных 
   export interface IOrderRequest {
     payment: 'online' | 'cash';
     email: string;
@@ -33,3 +37,4 @@ export interface IProduct {
   export interface IErrorResponse {
     error: string;
   }
+  
