@@ -1,11 +1,16 @@
-// Хорошая практика даже простые типы выносить в алиасы
-// Зато когда захотите поменять это достаточно сделать в одном месте
+
 type EventName = string | RegExp;
 type Subscriber = Function;
 type EmitterEvent = {
     eventName: string,
     data: unknown
 };
+
+export interface IEventEmitter {
+	emit(event: string, data?: unknown): void;
+	on(event: string, handler: (data?: unknown) => void): void;
+}
+
 
 export interface IEvents {
     on<T extends object>(event: EventName, callback: (data: T) => void): void;
@@ -14,9 +19,7 @@ export interface IEvents {
 }
 
 /**
- * Брокер событий, классическая реализация
- * В расширенных вариантах есть возможность подписаться на все события
- * или слушать события по шаблону например
+ * Брокер событий 
  */
 export class EventEmitter implements IEvents {
     _events: Map<EventName, Set<Subscriber>>;

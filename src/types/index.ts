@@ -38,3 +38,6 @@ export interface IProduct {
     error: string;
   }
   
+  export interface IView {
+  render(data?: object): HTMLElement;
+   }

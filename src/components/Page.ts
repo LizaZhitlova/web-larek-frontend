@@ -1,6 +1,7 @@
 import { ensureElement } from '../utils/utils';
 import { IEvents } from './base/events';
 
+
 export class Page {
 	protected _counter: HTMLElement;
 	protected _gallery: HTMLElement;
