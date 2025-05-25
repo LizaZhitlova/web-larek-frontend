@@ -31,7 +31,7 @@ export class WebLarekApi extends Api {
     return this.get(`/product/${id}`)
       .then((product: IProduct) => ({
         ...product,
-        image: this.cdn + product.image
+        image: this.cdn + product.image.replace(".svg",".png")
       }));
   }
 
