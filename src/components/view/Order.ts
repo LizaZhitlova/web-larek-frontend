@@ -94,7 +94,7 @@ export class ContactsView {
 			this.container
 		);
 		
-		// Создаем элементы для отображения ошибок, если их нет в разметке
+		// Создаем элементы для отображения ошибок
 		this.emailError = this.createErrorElement(this.emailInput, 'Введите корректный email');
 		this.phoneError = this.createErrorElement(this.phoneInput, 'Введите корректный номер телефона');
 
