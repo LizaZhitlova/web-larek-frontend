@@ -200,8 +200,6 @@ function getBasketItems(): { id: string; title: string; price: number }[] {
         .filter(Boolean) as { id: string; title: string; price: number }[];
 }
 
- document.querySelector('.modal.modal_active')?.classList.remove('modal_active');
-
 api
 	.getProducts()
 	.then((data) => {

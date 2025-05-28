@@ -12,10 +12,11 @@ export class BasketModel implements IBasketModel {
 	constructor(protected events: IEventEmitter) {}
 
 	add(id: string): void {
-		if(!this.items.has(id)){
+		if(this.items.has(id)){
+		return
+		}
 		this.items.add(id);
 		this._changed()
-		}
 	}
 
 	remove(id: string): void {
@@ -24,13 +25,6 @@ export class BasketModel implements IBasketModel {
 			this.items.delete(id);
 			this._changed()
 		};
-
-		// const current = this.items.get(id)!;
-		// if (current > 1) {
-		// 	this.items.set(id, current - 1);
-		// } else {
-		// 	this.items.delete(id);
-		// }
 	}
 
 	  // Проверяем, есть ли товар с таким ID в корзине
