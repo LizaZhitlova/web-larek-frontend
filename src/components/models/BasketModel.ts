@@ -1,31 +1,42 @@
  import {IEventEmitter} from "../base/events"
 interface IBasketModel {
-	items: Map<string, number>;
+	// items: Map<string, number>;
+	items:Set<string>;
 	add(id: string): void;
 	remove(id: string): void;
 }
 export class BasketModel implements IBasketModel {
-	items: Map<string, number> = new Map();
+	// items: Map<string, number> = new Map();
+	items:Set<string>= new Set()
 
 	constructor(protected events: IEventEmitter) {}
 
 	add(id: string): void {
-		this.items.set(id, (this.items.get(id) ?? 0) + 1);
-		this._changed();
+		if(!this.items.has(id)){
+		this.items.add(id);
+		this._changed()
+		}
 	}
 
 	remove(id: string): void {
 		if (!this.items.has(id)) return;
-
-		const current = this.items.get(id)!;
-		if (current > 1) {
-			this.items.set(id, current - 1);
-		} else {
+		else {
 			this.items.delete(id);
-		}
+			this._changed()
+		};
 
-		this._changed();
+		// const current = this.items.get(id)!;
+		// if (current > 1) {
+		// 	this.items.set(id, current - 1);
+		// } else {
+		// 	this.items.delete(id);
+		// }
 	}
+
+	  // Проверяем, есть ли товар с таким ID в корзине
+	  hasProduct(id: string): boolean {
+        return this.items.has(id);
+    }
 
 	clear(): void {
 		this.items.clear();

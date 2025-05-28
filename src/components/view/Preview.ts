@@ -16,7 +16,7 @@ export class PreviewView {
 
 	constructor(
 		protected container: HTMLElement,
-		protected events: IEventEmitter
+		protected events: IEventEmitter,
 	) {
 		this.title = ensureElement('.card__title', this.container);
 		this.category = ensureElement('.card__category', this.container);
@@ -30,10 +30,9 @@ export class PreviewView {
 			'.card__button',
 			this.container
 		);
-
   }
 
-	render(product: IProduct): HTMLElement {
+	render(product: IProduct, isblocked:boolean): HTMLElement {
 		this.title.textContent = product.title ?? 'Без названия';
 		this.category.textContent = product.category ?? '';
 		this.description.textContent = product.description ?? '';
@@ -45,8 +44,12 @@ export class PreviewView {
 			if (product.id) {
 				modal.close();
 				this.events.emit('ul:basket-add', { id: product.id });
-			}
+			};
+
 		});
+		
+		 this.button.disabled=isblocked
+		 
 
 		return this.container;
 	}

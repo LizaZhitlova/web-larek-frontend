@@ -71,9 +71,9 @@ events.on('catalog:loaded', (data: { items: IProduct[] }) => {
 // отображение модалки одной карточки
 events.on('product:receivedFromServer', (data: { data: IProduct }) => {
 	const preview = new PreviewView(cloneTemplate(cardPreviewTemplate), events);
-
+	const isInBasket = basketModel.hasProduct(data.data.id);
 	modal.render({
-		content: preview.render(data.data),
+		content: preview.render(data.data,isInBasket),
 	});
 });
 
@@ -88,17 +88,12 @@ events.on('product:select', (data: { id: string }) => {
 });
 
 events.on('basket:change', () => {
-	// Обновляем список в модалке
-	const items = getBasketItems();
+    // 1. Обновляем список товаров в корзине
+    const items = getBasketItems();
+    basketView.render({ items });
 
-	basketView.render({ items });
-
-	// Обновляем счётчик в шапке
-	const count = Array.from(basketModel.items.values()).reduce(
-		(sum, qty) => sum + qty,
-		0
-	);
-	page.counter = count;
+    // 2. Обновляем счётчик в шапке (количество уникальных товаров)
+    page.counter = basketModel.items.size;
 });
 
 events.on('ul:basket-add', (event: { id: string }) => {
@@ -191,21 +186,21 @@ events.on('success:done', () => {
 // #endregion
 
 function getBasketItems(): { id: string; title: string; price: number }[] {
-	return Array.from(basketModel.items.entries())
-		.map(([id, count]) => {
-			const product = catalogModel.getProduct(id);
-			if (!product || !product.price) return null;
-			return Array(count).fill({
-				id: product.id,
-				title: product.title,
-				price: product.price,
-			});
-		})
-		.flat()
-		.filter(Boolean) as { id: string; title: string; price: number }[];
+    return Array.from(basketModel.items)
+        .map((id) => {
+            const product = catalogModel.getProduct(id);
+            if (!product || !product.price) return null;
+            return [{
+                id: product.id,
+                title: product.title,
+                price: product.price,
+            }];
+        })
+        .flat()
+        .filter(Boolean) as { id: string; title: string; price: number }[];
 }
 
-document.querySelector('.modal.modal_active')?.classList.remove('modal_active');
+ document.querySelector('.modal.modal_active')?.classList.remove('modal_active');
 
 api
 	.getProducts()
